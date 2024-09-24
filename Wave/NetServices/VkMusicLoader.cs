@@ -100,10 +100,9 @@ namespace WAVE
 
 
     private static Config  m_cfg;
-    private  static bool   m_logged;
 
 
-    public static bool Logged { get { return m_logged; } }
+    public static bool Logged { get; private set; }
 
 
     public delegate string AskLogin   ();
@@ -114,7 +113,7 @@ namespace WAVE
 
     static VkMusicLoader()
     {
-      m_logged  = false;
+      Logged    = false;
       m_cfg     = new Config();
     }
 
@@ -129,7 +128,7 @@ namespace WAVE
       string      cfgPath     = "config.json"
     )
     {
-      if (m_logged && !newUser)
+      if (Logged && !newUser)
         return new Tuple<int, string>(0, "You already logged");
 
       if (newUser || !File.Exists(cfgPath))
@@ -156,7 +155,7 @@ namespace WAVE
 
       if (m_cfg.Token != "")
       {
-        m_logged = true;
+        Logged = true;
         return new Tuple<int, string>(0, "");
       }
       else
@@ -271,7 +270,7 @@ namespace WAVE
       m_cfg.Token       = "";
       m_cfg.Exceptions  = [];
 
-      m_logged = false;
+      Logged = false;
     }
 
 
