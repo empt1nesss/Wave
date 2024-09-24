@@ -1,0 +1,5 @@
+.venv
+**/config.json
+.vscode
+Wave/bin
+Wave/obj
