@@ -6,8 +6,14 @@ namespace WAVE
 {
   public class Song
   {
-    public const string WrongPath     = "Entered wrong path";
-    public const string RequestFailed = "No internet conection";
+    [JsonIgnore]
+    public const string FileAlreadyExists = "File already exists";
+
+    [JsonIgnore]
+    public const string WrongPath         = "Entered wrong path";
+
+    [JsonIgnore]
+    public const string RequestFailed     = "No internet conection";
 
 
     [JsonProperty("title")]
@@ -19,13 +25,19 @@ namespace WAVE
     [JsonProperty("url")]
     public string Url       { get; private set; }
 
+    [JsonProperty("path")]
+    public string LocalPath { get; private set; }
+
     [JsonProperty("duration")]
     public uint   Duration  { get; private set; }
 
     // imageUrl;
     
 
+    [JsonIgnore]
     public string FullName  { get { return $"{ Artist } - { Title }"; } }
+    
+    [JsonIgnore]
     public string FileName
     {
       get
@@ -39,15 +51,16 @@ namespace WAVE
     }
 
 
-    public Song(string title="", string artist="", string url="")
+    public Song(string title="", string artist="", string url="", string path="")
     {
       Title       = title;
       Artist      = artist;
       Url         = url;
+      LocalPath   = path;
     }
 
 
-    public async Task<string> Download(string path)
+    public async Task Download(string path)
     {
       try
       {
@@ -67,7 +80,7 @@ namespace WAVE
           }
 
           if (File.Exists(Path.Join(path, FileName)))
-            return $"File { FileName } already exists";
+            throw new Exception(FileAlreadyExists);
         }
 
         var file = new FileStream(Path.Join(path, FileName), FileMode.Create, FileAccess.Write);
@@ -79,13 +92,13 @@ namespace WAVE
         throw new Exception(RequestFailed);
       }
 
+      LocalPath = Path.Join(path, FileName);
+
       var song = TagLib.File.Create(Path.Join(path, FileName));
 
       song.Tag.Title = Title;
       song.Tag.Performers = [ Artist ];
       song.Save();
-
-      return "";
     }
   }
 }

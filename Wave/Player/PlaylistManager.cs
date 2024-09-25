@@ -11,10 +11,13 @@ namespace WAVE
     public class Playlist
     {
       [JsonProperty("name")]
-      public string     Name  { get; private set; }
+      public string     Name;
 
       [JsonProperty("songs")]
-      public List<Song> Songs { get; private set; }
+      public List<Song> Songs;
+
+      [JsonProperty("path")]
+      public string     LocalPath;
     }
 
 
@@ -105,6 +108,9 @@ namespace WAVE
 
     public static void NextSong()
     {
+      if (m_currentSongIndex == -1)
+        return;
+
       if (++m_currentSongIndex >= Playlists[m_currentPlaylistIndex].Songs.Count)
       {
         Player.StopPlayBack();
@@ -117,6 +123,9 @@ namespace WAVE
 
     public static void PrevSong()
     {
+      if (m_currentSongIndex == -1)
+        return;
+
       if (--m_currentSongIndex < 0)
       {
         Player.StopPlayBack();
@@ -126,5 +135,26 @@ namespace WAVE
 
       Player.PlayBack(Playlists[m_currentPlaylistIndex].Songs[m_currentSongIndex]);
     }
+
+
+    public static void AddToPlaylist(Song song, int[] playlistsIndexes)
+    {
+      if (Playlists.Length == 0)
+      {
+        // CreatePlaylist("All Music", [ song ]);
+        return;
+      }
+
+      Playlists[0].Songs = Playlists[0].Songs.Append(song).ToList();
+      File.WriteAllText(Playlists[0].LocalPath, JsonConvert.SerializeObject(Playlists[0]));
+      foreach (var i in playlistsIndexes)
+        if (i >= 1 && i < Playlists.Length)
+        {
+          Playlists[i].Songs = Playlists[i].Songs.Append(song).ToList();
+          File.WriteAllText(Playlists[i].LocalPath, JsonConvert.SerializeObject(Playlists[i]));
+        }
+    }
   }
+
+
 }

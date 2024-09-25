@@ -5,6 +5,10 @@ namespace WAVE
 {
   static class Player
   {
+    public const string SongNotFound    = "Incorrect song link";
+    public const string WrongFileFormat = "Wrong file format";
+
+
     static private Mp3FileReader          ? m_mp3Reader;
     static private WaveFileReader         ? m_wavReader;
     static private MediaFoundationReader  ? m_audioNetReader;
@@ -101,24 +105,34 @@ namespace WAVE
     {
       StopPlayBack();
       
-      if (!song.Url.StartsWith("file: "))
+      if (song.LocalPath == null)
       {
+        if (song.Url == null)
+          throw new Exception(SongNotFound);
+
         m_audioNetReader = new MediaFoundationReader(song.Url);
         m_audioStream.Init(m_audioNetReader);
         TrackFormat = "net";
       }
-      else if (song.Url.EndsWith(".mp3"))
+      else if (song.LocalPath.EndsWith(".mp3"))
       {
-        m_mp3Reader = new Mp3FileReader(song.Url[6..]);
+        m_mp3Reader = new Mp3FileReader(song.LocalPath);
         m_audioStream.Init(m_mp3Reader); 
         TrackFormat = "mp3";
       }
-      else if (song.Url.EndsWith(".wav"))
+      else if (song.LocalPath.EndsWith(".wav"))
       {
-        m_wavReader = new WaveFileReader(song.Url[6..]);
+        m_wavReader = new WaveFileReader(song.LocalPath);
         m_audioStream.Init(m_wavReader);
         TrackFormat = "wav";
       }
+      else
+        throw new Exception(WrongFileFormat);
+
+      IsFileOpened = true;
+      
+      m_audioStream.Volume = Volume / 100.0f;
+      m_audioStream.Play();
 
       IsPause = false;
     }

@@ -12,6 +12,8 @@ namespace WAVE
       foreach (var song in PlaylistManager.Playlists[0].Songs)
         System.Console.WriteLine(song.FullName);
 
+      // await DownloadSong();
+
       PlaylistManager.CurrentSongIndex = 0;
       PlaylistManager.PlayBack();
       Thread.Sleep(5000);
@@ -23,6 +25,7 @@ namespace WAVE
       Thread.Sleep(5000);
       PlaylistManager.NextSong();
       Thread.Sleep(5000);
+
     }
 
 
@@ -71,11 +74,14 @@ namespace WAVE
           if (VkMusicLoader.IsSongInExceptions(songs[i]))
             Console.WriteLine($"[!] Skipped exception { songs[i].FullName }.");
 
-          string err = await songs[i].Download(dir);
-          if (err == "")
-            Console.WriteLine($"[+] Downloaded { songs[i].FullName }.");
-          else
-            Console.WriteLine($"[-] Failed to download { songs[i].FullName }! Reason:\n    { err }.");
+          try
+          {
+            await songs[i].Download(dir);
+          }
+          catch (Exception exc)
+          {
+            System.Console.WriteLine("[-] Error:\n" + exc.Message);
+          }
 
         }
 
@@ -99,7 +105,7 @@ namespace WAVE
       string songName = Console.ReadLine();
 
       uint page = 0;
-      Task<string>[] dlTasks = [];
+      Task[] dlTasks = [];
       var playBackSong = new Song();
       while (true)
       {
@@ -119,6 +125,7 @@ namespace WAVE
             continue;
 
           dlTasks = dlTasks.Append(songs[index].Download("Music")).ToArray();
+          PlaylistManager.AddToPlaylist(songs[index], []);
         }
         else if (cmd == "q")
           break;
@@ -137,22 +144,6 @@ namespace WAVE
           songName = cmd[1..];
           page = 0;
         }
-        // else if (cmd == "pause")
-        //   playBackSong.PausePlayBack();
-        // else if (cmd[0] == 'p')
-        // {
-        //   if (Regex.IsMatch(cmd[1..], @"^\d+$"))
-        //   {
-        //     int index = Convert.ToInt32(cmd[1..]) - 1;
-        //     if (index < 0 || index >= songs.Count)
-        //       continue;
-
-        //     playBackSong.PausePlayBack();
-        //     playBackSong = songs[index];
-        //     Task.Run(() => playBackSong.PlayBack());
-        //   }
-        // }
-          
       }
       if (dlTasks.Length > 0)
       {
