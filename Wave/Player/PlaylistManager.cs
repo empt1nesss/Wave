@@ -13,18 +13,53 @@ namespace WAVE
       [JsonProperty("name")]
       public string     Name  { get; private set; }
 
-      [JsonProperty("count")]
-      public uint       Count { get; private set; }
-
       [JsonProperty("songs")]
       public List<Song> Songs { get; private set; }
     }
-    private static Playlist[] m_playlists;
+
+
+    private static int m_currentPlaylistIndex;
+    private static int m_currentSongIndex;
+
+    public static Playlist[]  Playlists { get; private set; }
+    public static int         CurrentPlaylistIndex
+    {
+      get
+      {
+        return m_currentPlaylistIndex;
+      }
+      set
+      {
+        if (value >= 0 && value < Playlists.Length)
+        {
+          m_currentPlaylistIndex  = value;
+          m_currentSongIndex      = -1;
+        }
+      }
+    }
+    public static int         CurrentSongIndex
+    {
+      get
+      {
+        return m_currentSongIndex;
+      }
+      set
+      {
+        if (m_currentPlaylistIndex < 0)
+          return;
+
+        if (value >= 0 && value < Playlists[m_currentPlaylistIndex].Songs.Count)
+          m_currentSongIndex  = value;
+      }
+    }
+
 
 
     static PlaylistManager()
     {
-      m_playlists = [];
+      Playlists               = [];
+      m_currentPlaylistIndex  = -1;
+      m_currentSongIndex      = -1;
     }
 
 
@@ -36,8 +71,60 @@ namespace WAVE
       string[] playlistsFiles = Directory.GetFiles(playlistsDir, "*.plst");
       foreach (var path in playlistsFiles)
       {
-        m_playlists = m_playlists.Append(JsonConvert.DeserializeObject<Playlist>(File.ReadAllText(path))).ToArray();
+        Playlists = Playlists.Append(JsonConvert.DeserializeObject<Playlist>(File.ReadAllText(path))).ToArray();
       }
+
+      if (Playlists.Length > 0)
+        m_currentPlaylistIndex = 0;
+    }
+
+
+    public static void PlayBack()
+    {
+      if (m_currentPlaylistIndex == -1)
+        return;
+
+      if (m_currentPlaylistIndex >= Playlists.Length)
+      {
+        m_currentPlaylistIndex  = -1;
+        m_currentSongIndex      = -1;
+        return;
+      }
+
+      if (m_currentSongIndex == -1)
+        return;
+
+      if (m_currentSongIndex >= Playlists[m_currentPlaylistIndex].Songs.Count)
+      {
+        m_currentSongIndex = -1;
+        return;
+      }
+
+      Player.PlayBack(Playlists[m_currentPlaylistIndex].Songs[m_currentSongIndex]);
+    }
+
+    public static void NextSong()
+    {
+      if (++m_currentSongIndex >= Playlists[m_currentPlaylistIndex].Songs.Count)
+      {
+        Player.StopPlayBack();
+        m_currentSongIndex = -1;
+        return;
+      }
+
+      Player.PlayBack(Playlists[m_currentPlaylistIndex].Songs[m_currentSongIndex]);
+    }
+
+    public static void PrevSong()
+    {
+      if (--m_currentSongIndex < 0)
+      {
+        Player.StopPlayBack();
+        m_currentSongIndex = -1;
+        return;
+      }
+
+      Player.PlayBack(Playlists[m_currentPlaylistIndex].Songs[m_currentSongIndex]);
     }
   }
 }

@@ -7,17 +7,22 @@ namespace WAVE
   {
     static async Task Main(string[] args)
     {
-      // try
-      // {
-      //   await DownloadSong();
-      //   // await DownloadUsersSong();
-      // }
-      // catch (Exception exc)
-      // {
-      //   Console.WriteLine("ERROR:\n" + exc.Message);
-      // }
-
       PlaylistManager.LoadPlaylist(".");
+      System.Console.WriteLine("Name: " + PlaylistManager.Playlists[0].Name);
+      foreach (var song in PlaylistManager.Playlists[0].Songs)
+        System.Console.WriteLine(song.FullName);
+
+      PlaylistManager.CurrentSongIndex = 0;
+      PlaylistManager.PlayBack();
+      Thread.Sleep(5000);
+      PlaylistManager.NextSong();
+      Thread.Sleep(5000);
+      PlaylistManager.NextSong();
+      Thread.Sleep(5000);
+      PlaylistManager.NextSong();
+      Thread.Sleep(5000);
+      PlaylistManager.NextSong();
+      Thread.Sleep(5000);
     }
 
 
