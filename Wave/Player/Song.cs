@@ -26,7 +26,17 @@ namespace WAVE
     
 
     public string FullName  { get { return $"{ Artist } - { Title }"; } }
-    public string FileName  { get { return Regex.Replace($"{ Artist } - { Title }.mp3", "[<>:\"\\/|?*]", "_"); } }
+    public string FileName
+    {
+      get
+      {
+        string format = ".mp3";
+        if (Url.EndsWith(".wav"))
+          format = ".wav";
+
+        return Regex.Replace($"{ Artist } - { Title }" + format, "[<>:\"\\/|?*]", "_");
+      }
+    }
 
 
     public Song(string title="", string artist="", string url="")

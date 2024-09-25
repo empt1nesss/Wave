@@ -7,15 +7,17 @@ namespace WAVE
   {
     static async Task Main(string[] args)
     {
-      try
-      {
-        await DownloadSong();
-        // await DownloadUsersSong();
-      }
-      catch (Exception exc)
-      {
-        Console.WriteLine("ERROR:\n" + exc.Message);
-      }
+      // try
+      // {
+      //   await DownloadSong();
+      //   // await DownloadUsersSong();
+      // }
+      // catch (Exception exc)
+      // {
+      //   Console.WriteLine("ERROR:\n" + exc.Message);
+      // }
+
+      PlaylistManager.LoadPlaylist(".");
     }
 
 
