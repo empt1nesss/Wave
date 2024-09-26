@@ -61,7 +61,9 @@ namespace WAVE
       string[] playlistsFiles = Directory.GetFiles(playlistsDir, "*.plst");
       foreach (var path in playlistsFiles)
       {
-        Playlists = Playlists.Append(JsonConvert.DeserializeObject<Playlist>(File.ReadAllText(path))).ToArray();
+        var plst = JsonConvert.DeserializeObject<Playlist>(File.ReadAllText(path));
+        if (plst != null)
+          Playlists = Playlists.Append(plst).ToArray();
       }
 
       if (Playlists.Length > 0)

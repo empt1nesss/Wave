@@ -18,12 +18,11 @@ namespace WAVE
     static public Song    CurrentSong   { get; private set; }
     static public string  TrackFormat   { get; private set; }
     static public bool    IsPause       { get; private set; }
-    static public bool    IsFileOpened  { get; private set; }
     static public bool    IsPlayBackEnd
     {
       get
       {
-        if (!IsFileOpened)
+        if (CurrentSong == null)
           return false;
 
         return m_audioStream.PlaybackState == PlaybackState.Stopped;
@@ -43,7 +42,7 @@ namespace WAVE
         else if (m_volume < 0.0f)
           m_volume = 0.0f;
 
-        if (IsFileOpened)
+        if (CurrentSong != null)
           m_audioStream.Volume = m_volume;
       }
     }
@@ -51,7 +50,7 @@ namespace WAVE
     {
       get
       {
-        if (!IsFileOpened)
+        if (CurrentSong == null)
           return 0.0;
         if (TrackFormat == "net")
           return m_audioNetReader.CurrentTime.TotalSeconds;
@@ -64,7 +63,7 @@ namespace WAVE
       }
       set
       {
-        if (IsFileOpened)
+        if (CurrentSong != null)
         {
           if (value >= CurrentSong.Duration)
             StopPlayBack();
@@ -92,10 +91,8 @@ namespace WAVE
     static Player()
     {
       IsPause       = true;
-      IsFileOpened  = false;
       TrackFormat   = "";
       Volume        = 15.0f;
-      CurrentSong   = new Song();
 
       m_audioStream = new WaveOutEvent();
     }
@@ -128,9 +125,10 @@ namespace WAVE
       }
       else
         throw new Exception(WrongFileFormat);
-
-      IsFileOpened = true;
       
+
+      CurrentSong = song;
+
       m_audioStream.Volume = Volume / 100.0f;
       m_audioStream.Play();
 
@@ -139,7 +137,7 @@ namespace WAVE
 
     public static void StopPlayBack()
     {
-      if (IsFileOpened)
+      if (CurrentSong != null)
       {
         m_audioStream.Stop();
         IsPause = true;
@@ -151,13 +149,13 @@ namespace WAVE
         else if (TrackFormat == "wav")
           m_wavReader.Close();
 
-        IsFileOpened = false;
+        CurrentSong = null;
       }
     }
 
     public static void PauseOrResumePlayBack()
     {
-      if (!IsFileOpened)
+      if (CurrentSong == null)
         return;
 
       if (IsPause)
@@ -174,7 +172,7 @@ namespace WAVE
 
     static public void Pause()
     {
-      if (!IsPause && IsFileOpened)
+      if (!IsPause && CurrentSong != null)
       {
         m_audioStream.Pause();
         IsPause = true;
@@ -183,7 +181,7 @@ namespace WAVE
 
     static public void Resume()
     {
-      if (IsPause && IsFileOpened)
+      if (IsPause && CurrentSong != null)
       {
         m_audioStream.Play();
         IsPause = false;

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 
 
@@ -21,6 +22,9 @@ namespace WAVE
 
     public Playlist(string path)
     {
+      if (!File.Exists(path) || !path.EndsWith(".plst"))
+        throw new Exception(WrongPath);
+
       var pl = JsonConvert.DeserializeObject<Playlist>(File.ReadAllText(path));
       if (pl == null)
         throw new Exception(WrongPath);
@@ -33,7 +37,12 @@ namespace WAVE
     public Playlist(string name, List<Song> songs)
     {
       Name  = name;
+
+      if (Songs == null)
+        Songs = [];
       Songs = Songs.Concat(songs).ToList();
+      
+      LocalPath = "";
     }
 
 
@@ -43,11 +52,13 @@ namespace WAVE
       File.WriteAllText(LocalPath, JsonConvert.SerializeObject(this));
     }
 
-    public void Save(string path)
+    public void Save(string dir)
     {
-      LocalPath = path;
-      if (path != null && path != "")
-        File.WriteAllText(path, JsonConvert.SerializeObject(this));
+      if (dir == null || !Directory.Exists(dir))
+        throw new Exception(WrongPath);
+
+      LocalPath = Path.Join(dir, Name, ".plst");
+      File.WriteAllText(LocalPath, JsonConvert.SerializeObject(this));
     }
 
     public void SetName(string newName)

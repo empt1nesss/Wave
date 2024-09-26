@@ -53,15 +53,7 @@ namespace WAVE
         return Regex.Replace($"{ Artist } - { Title }" + format, "[<>:\"\\/|?*]", "_");
       }
     }
-
-
-    public Song()
-    {
-      Title       = "";
-      Artist      = "";
-      Url         = "";
-      LocalPath   = "";
-    }
+    
 
     public Song(string path)
     {

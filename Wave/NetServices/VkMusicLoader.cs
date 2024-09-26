@@ -13,6 +13,7 @@ namespace WAVE
     public const string RequestFailed          = "No internet conection";
     public const string FailedToGetUserSongs   = "Get users songs critical error";
     public const string UsersAudioAccessDenied = "These users audios are private";
+    public const string ReadFileFailed         = "Failed to read file";
 
 
     private class Response
@@ -148,9 +149,10 @@ namespace WAVE
       }
       else
       {
-        m_cfg = JsonConvert.DeserializeObject<Config>(
-          File.ReadAllText(cfgPath)
-        );
+        var cfg = JsonConvert.DeserializeObject<Config>(File.ReadAllText(cfgPath));
+        if (cfg == null)
+          throw new Exception(ReadFileFailed);
+        m_cfg = cfg;
       }
 
       if (m_cfg.Token != "")
