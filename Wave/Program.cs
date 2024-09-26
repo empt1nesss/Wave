@@ -7,14 +7,14 @@ namespace WAVE
   {
     static async Task Main(string[] args)
     {
-      PlaylistManager.LoadPlaylist(".");
+      PlaylistManager.LoadPlaylists(".");
       System.Console.WriteLine("Name: " + PlaylistManager.Playlists[0].Name);
       foreach (var song in PlaylistManager.Playlists[0].Songs)
         System.Console.WriteLine(song.FullName);
 
-      // await DownloadSong();
+      await DownloadSong();
 
-      PlaylistManager.CurrentSongIndex = 0;
+      PlaylistManager.CurrentSongIndex = 3;
       PlaylistManager.PlayBack();
       Thread.Sleep(5000);
       PlaylistManager.NextSong();
@@ -57,26 +57,26 @@ namespace WAVE
       
       while (page > 0)
       {
-        List<Song> songs = [];
+        Playlist songs;
         if (page - 1 == count / 32)
           songs = await VkMusicLoader.GetUsersSongs(userId, count % 32, (page - 1) * 32);
         else
           songs = await VkMusicLoader.GetUsersSongs(userId, 32, (page - 1) * 32);
 
-        if (songs.Count == 0)
+        if (songs.Songs.Count == 0)
         {
           --page;
           continue;
         }
 
-        for (int i = songs.Count - 1; i >= 0; --i)
+        for (int i = songs.Songs.Count - 1; i >= 0; --i)
         {
-          if (VkMusicLoader.IsSongInExceptions(songs[i]))
-            Console.WriteLine($"[!] Skipped exception { songs[i].FullName }.");
+          if (VkMusicLoader.IsSongInExceptions(songs.Songs[i]))
+            Console.WriteLine($"[!] Skipped exception { songs.Songs[i].FullName }.");
 
           try
           {
-            await songs[i].Download(dir);
+            await songs.Songs[i].Download(dir);
           }
           catch (Exception exc)
           {
@@ -112,8 +112,8 @@ namespace WAVE
         Console.Clear();
 
         var songs = await VkMusicLoader.SearchSongs(songName, 10, page * 10);
-        for (int i = 0; i < songs.Count; ++i)
-          Console.WriteLine($"{ i + 1 }:\t{ songs[i].FullName }");
+        for (int i = 0; i < songs.Songs.Count; ++i)
+          Console.WriteLine($"{ i + 1 }:\t{ songs.Songs[i].FullName }");
 
         Console.Write("\n > ");
         string cmd = Console.ReadLine();
@@ -121,17 +121,17 @@ namespace WAVE
         if (Regex.IsMatch(cmd, @"^\d+$"))
         {
           int index = Convert.ToInt32(cmd) - 1;
-          if (index < 0 || index >= songs.Count)
+          if (index < 0 || index >= songs.Songs.Count)
             continue;
 
-          dlTasks = dlTasks.Append(songs[index].Download("Music")).ToArray();
-          PlaylistManager.AddToPlaylist(songs[index], []);
+          dlTasks = dlTasks.Append(songs.Songs[index].Download("Music")).ToArray();
+          PlaylistManager.Playlists[0].Add(songs.Songs[index]);
         }
         else if (cmd == "q")
           break;
         else if (cmd == "n")
         {
-          if (songs.Count == 10)
+          if (songs.Songs.Count == 10)
             ++page;
         }
         else if (cmd == "p")

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using NAudio.Wave;
 using Newtonsoft.Json;
 
 
@@ -11,6 +12,9 @@ namespace WAVE
 
     [JsonIgnore]
     public const string WrongPath         = "Entered wrong path";
+
+    [JsonIgnore]
+    public const string WrongFormat       = "Format doesn't support";
 
     [JsonIgnore]
     public const string RequestFailed     = "No internet conection";
@@ -51,7 +55,58 @@ namespace WAVE
     }
 
 
-    public Song(string title="", string artist="", string url="", string path="")
+    public Song()
+    {
+      Title       = "";
+      Artist      = "";
+      Url         = "";
+      LocalPath   = "";
+    }
+
+    public Song(string path)
+    {
+      if (!File.Exists(path))
+        throw new Exception(WrongPath);
+
+      string trackFormat = "mp3";
+      if (path.EndsWith(".wav"))
+        trackFormat = "wav";
+      else if (!path.EndsWith(".mp3"))
+        throw new Exception(WrongFormat);
+
+      LocalPath = path;
+      Url       = "";
+
+      var song = TagLib.File.Create(Path.Join(path, FileName));
+
+      Title   = song.Tag.Title;
+      if (Title == "")
+        Title = Path.GetFileName(path[..^4]);
+
+      Artist = "";
+      for (int i = 0; i < song.Tag.Performers.Length; ++i)
+      {
+        if (i == 0)
+          Artist += song.Tag.Performers[0];
+        else if (i == 1)
+          Artist += "feat. " + song.Tag.Performers[0];
+        else
+          Artist += ", " + song.Tag.Performers[0];
+      }
+
+      if (trackFormat == "mp3")
+      {
+        var mp3Reader = new Mp3FileReader(path);
+        Duration = (uint)mp3Reader.TotalTime.TotalSeconds;
+      }
+      else
+      {
+        var wavReader = new WaveFileReader(path);
+        Duration = (uint)wavReader.TotalTime.TotalSeconds;
+      }
+    }
+
+    public Song(string title, string artist, string url, string path)
     {
       Title       = title;
       Artist      = artist;

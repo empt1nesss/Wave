@@ -118,7 +118,7 @@ namespace WAVE
     }
 
 
-    public static async Task<Tuple<int, string>> Auth(
+    public static async Task Auth(
       AskLogin    askLogin,
       AskPass     askPass,
       Ask2FA      ask2FA,
@@ -129,7 +129,7 @@ namespace WAVE
     )
     {
       if (Logged && !newUser)
-        return new Tuple<int, string>(0, "You already logged");
+        return;
 
       if (newUser || !File.Exists(cfgPath))
       {
@@ -156,14 +156,14 @@ namespace WAVE
       if (m_cfg.Token != "")
       {
         Logged = true;
-        return new Tuple<int, string>(0, "");
+        return;
       }
       else
         throw new Exception(LogInFailed);
     }
 
 
-    public static async Task<List<Song>> SearchSongs(
+    public static async Task<Playlist> SearchSongs(
       string  songName,
       uint    count,
       uint    offset   = 0
@@ -178,10 +178,13 @@ namespace WAVE
         { "autocomplete", "1"                       }
       };
       
-      return await getResponse("search", parameters);
+      var res = await getResponse("search", parameters);
+      var name = $"_query={ songName }_count={ count }_offset={ offset }";
+      res.SetName(name);
+      return res;
     }
 
-    public static async Task<List<Song>> GetUsersSongs(uint userId, uint count, uint offset=0)
+    public static async Task<Playlist> GetUsersSongs(uint userId, uint count, uint offset=0)
     {
       if (userId == 0)
         throw new Exception(UsersAudioAccessDenied);
@@ -193,7 +196,10 @@ namespace WAVE
         { "offset",   Convert.ToString(offset)  }
       };
 
-      return await getResponse("get", parameters);
+      var res = await getResponse("get", parameters);
+      var name = res.Name + $"_user={ userId }_count={ count }_offset={ offset }";
+      res.SetName(name);
+      return res;
     }
 
     public static async Task<uint> GetUsersSongsCount(uint userId)
@@ -386,7 +392,7 @@ namespace WAVE
       }
     }
 
-    private static async Task<List<Song>> getResponse(
+    private static async Task<Playlist> getResponse(
       string                      method,
       Dictionary<string, string>  parameters
     )
@@ -433,7 +439,7 @@ namespace WAVE
           if (res.response.items[0].Url == "https://vk.com/mp3/audio_api_unavailable.mp3")
             throw new Exception(InvalidUserAgent);
 
-        return res.response.items;
+        return new Playlist("vk", res.response.items);
       }
       catch (HttpRequestException)
       {
