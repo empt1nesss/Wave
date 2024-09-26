@@ -49,7 +49,18 @@ namespace WAVE
     public void Add(Song song)
     {
       Songs = Songs.Append(song).ToList();
-      File.WriteAllText(LocalPath, JsonConvert.SerializeObject(this));
+      if (LocalPath != null && LocalPath != "")
+        File.WriteAllText(LocalPath, JsonConvert.SerializeObject(this));
+    }
+
+    public void Remove(int songIndex)
+    {
+      if (songIndex < 0 || songIndex >= Songs.Count)
+        return;
+
+      Songs.RemoveAt(songIndex);
+      if (LocalPath != null && LocalPath != "")
+        File.WriteAllText(LocalPath, JsonConvert.SerializeObject(this));
     }
 
     public void Save(string dir)

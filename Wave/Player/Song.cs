@@ -147,5 +147,14 @@ namespace WAVE
       song.Tag.Performers = [ Artist ];
       song.Save();
     }
+
+    public void Delete()
+    {
+      if (LocalPath == null || LocalPath == "")
+        return;
+
+      File.Delete(LocalPath);
+      LocalPath = "";
+    }
   }
 }

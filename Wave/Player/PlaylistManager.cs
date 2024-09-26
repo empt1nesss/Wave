@@ -8,48 +8,23 @@ namespace WAVE
     public const string WrongPath = "Entered wrong path";
 
 
-    private static int m_currentPlaylistIndex;
-    private static int m_currentSongIndex;
+    public static int CurrentPlaylistIndex  { get; private set; }
+    public static int CurrentSongIndex      { get; private set; }
+    public static int CurrentQueueSongIndex { get; private set; }
 
-    public static Playlist[]  Playlists { get; private set; }
-    public static int         CurrentPlaylistIndex
-    {
-      get
-      {
-        return m_currentPlaylistIndex;
-      }
-      set
-      {
-        if (value >= 0 && value < Playlists.Length)
-        {
-          m_currentPlaylistIndex  = value;
-          m_currentSongIndex      = -1;
-        }
-      }
-    }
-    public static int         CurrentSongIndex
-    {
-      get
-      {
-        return m_currentSongIndex;
-      }
-      set
-      {
-        if (m_currentPlaylistIndex < 0)
-          return;
-
-        if (value >= 0 && value < Playlists[m_currentPlaylistIndex].Songs.Count)
-          m_currentSongIndex  = value;
-      }
-    }
-
+    public static List<Playlist>  Playlists   { get; private set; }
+    public static Playlist        Queue       { get; private set; }
+    public static bool            IsQueueNow  { get; private set; }
 
 
     static PlaylistManager()
     {
-      Playlists               = [];
-      m_currentPlaylistIndex  = -1;
-      m_currentSongIndex      = -1;
+      Playlists             = [];
+      Queue                 = new Playlist("queue", []);
+      IsQueueNow            = false;
+      CurrentPlaylistIndex  = -1;
+      CurrentSongIndex      = -1;
+      CurrentQueueSongIndex = -1;
     }
 
 
@@ -63,66 +38,161 @@ namespace WAVE
       {
         var plst = JsonConvert.DeserializeObject<Playlist>(File.ReadAllText(path));
         if (plst != null)
-          Playlists = Playlists.Append(plst).ToArray();
+          Playlists = Playlists.Append(plst).ToList();
       }
 
-      if (Playlists.Length > 0)
-        m_currentPlaylistIndex = 0;
+      if (Playlists.Count > 0)
+        CurrentPlaylistIndex = 0;
+    }
+
+    public static void RemoveSongFromPlaylist(int playlistIndex, int songIndex)
+    {
+      if (playlistIndex < 0 || playlistIndex >= Playlists.Count)
+        return;
+
+      if (songIndex < 0 || songIndex >= Playlists[playlistIndex].Songs.Count)
+        return;
+
+      Playlists[playlistIndex].Remove(songIndex);
+      if (playlistIndex == CurrentPlaylistIndex)
+      {
+        if (CurrentSongIndex == songIndex)
+          Player.StopPlayBack();
+
+        if (CurrentSongIndex == Playlists[playlistIndex].Songs.Count)
+          CurrentSongIndex = -1;
+        else if (CurrentSongIndex > songIndex)
+          --CurrentSongIndex;
+      }
+    }
+
+    public static void RemoveSongFromQueue(int songIndex)
+    {
+      if (songIndex < 0 || songIndex >= Queue.Songs.Count)
+        return;
+
+
+      Queue.Remove(songIndex);
+      if (IsQueueNow)
+      {
+        if (songIndex == CurrentQueueSongIndex)
+        {
+          NextSong();
+          return;
+        }
+        else if (CurrentSongIndex == Queue.Songs.Count)
+          CurrentSongIndex = -1;
+        else if (CurrentSongIndex > songIndex)
+          --CurrentSongIndex;
+      }
+    }
+
+    public static void RemovePlaylist(int playlistIndex)
+    {
+      if (playlistIndex < 0 || playlistIndex >= Playlists.Count)
+        return;
+
+      Playlists.RemoveAt(playlistIndex);
+      if (playlistIndex == CurrentPlaylistIndex && !IsQueueNow)
+      {
+        Player.StopPlayBack();
+        CurrentSongIndex      = -1;
+        CurrentPlaylistIndex  = -1;
+      }
+      else if (CurrentPlaylistIndex > playlistIndex)
+        --CurrentPlaylistIndex;
+      
     }
 
 
-    public static void PlayBack()
+    public static void PlayBack(int playlistIndex, int songIndex)
     {
-      if (m_currentPlaylistIndex == -1)
+      if (playlistIndex < 0 || playlistIndex >= Playlists.Count)
         return;
 
-      if (m_currentPlaylistIndex >= Playlists.Length)
-      {
-        m_currentPlaylistIndex  = -1;
-        m_currentSongIndex      = -1;
-        return;
-      }
-
-      if (m_currentSongIndex == -1)
+      if (songIndex < 0 || songIndex >= Playlists[playlistIndex].Songs.Count)
         return;
 
-      if (m_currentSongIndex >= Playlists[m_currentPlaylistIndex].Songs.Count)
-      {
-        m_currentSongIndex = -1;
-        return;
-      }
+      Player.PlayBack(Playlists[playlistIndex].Songs[songIndex]);
+      IsQueueNow           = false;
+      CurrentPlaylistIndex = playlistIndex;
+      CurrentSongIndex     = songIndex;
+    }
 
-      Player.PlayBack(Playlists[m_currentPlaylistIndex].Songs[m_currentSongIndex]);
+    public static void PlayBackFromQueue(int songIndex)
+    {
+      if (songIndex < 0 || songIndex >= Queue.Songs.Count)
+        return;
+
+      Player.PlayBack(Queue.Songs[songIndex]);
+      IsQueueNow             = true;
+      CurrentQueueSongIndex  = songIndex;
     }
 
     public static void NextSong()
     {
-      if (m_currentSongIndex == -1)
-        return;
-
-      if (++m_currentSongIndex >= Playlists[m_currentPlaylistIndex].Songs.Count)
+      if (IsQueueNow)
       {
-        Player.StopPlayBack();
-        m_currentSongIndex = -1;
-        return;
-      }
+        if (CurrentQueueSongIndex < 0)
+          return;
 
-      Player.PlayBack(Playlists[m_currentPlaylistIndex].Songs[m_currentSongIndex]);
+        if (CurrentQueueSongIndex >= Queue.Songs.Count)
+        {
+          Player.StopPlayBack();
+          Queue.Remove(CurrentQueueSongIndex);
+          CurrentQueueSongIndex = -1;
+          return;
+        }
+
+        Queue.Remove(CurrentQueueSongIndex);
+        Player.PlayBack(Queue.Songs[CurrentQueueSongIndex]);
+      }
+      else
+      {
+        if (CurrentSongIndex < 0)
+          return;
+
+        if (++CurrentSongIndex >= Playlists[CurrentPlaylistIndex].Songs.Count)
+        {
+          Player.StopPlayBack();
+          CurrentSongIndex = -1;
+          return;
+        }
+
+        Player.PlayBack(Playlists[CurrentPlaylistIndex].Songs[CurrentSongIndex]);
+      }
     }
 
     public static void PrevSong()
     {
-      if (m_currentSongIndex == -1)
-        return;
-
-      if (--m_currentSongIndex < 0)
+      if (IsQueueNow)
       {
-        Player.StopPlayBack();
-        m_currentSongIndex = -1;
-        return;
-      }
+        if (CurrentQueueSongIndex < 0)
+          return;
 
-      Player.PlayBack(Playlists[m_currentPlaylistIndex].Songs[m_currentSongIndex]);
+        if (--CurrentQueueSongIndex < 0)
+        {
+          Player.StopPlayBack();
+          CurrentQueueSongIndex = -1;
+          return;
+        }
+
+        Player.PlayBack(Queue.Songs[CurrentQueueSongIndex]);
+      }
+      else
+      {
+        if (CurrentSongIndex < 0)
+          return;
+
+        if (--CurrentSongIndex < 0)
+        {
+          Player.StopPlayBack();
+          CurrentSongIndex = -1;
+          return;
+        }
+
+        Player.PlayBack(Playlists[CurrentPlaylistIndex].Songs[CurrentSongIndex]);
+      }
     }
   }
 }
